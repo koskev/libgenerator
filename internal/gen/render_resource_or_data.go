@@ -74,7 +74,7 @@ func renderResourceOrDataSource(
 		if err != nil {
 			return nil, err
 		}
-		rootFields = append(rootFields, *bareWithFn, j.Hidden(*bareWithFnDoc))
+		rootFields = append(rootFields, j.Hidden(*bareWithFn), j.Hidden(*bareWithFnDoc))
 
 		if cfg.attr.AttributeNestedType != nil {
 			collTyp := getCollectionType(cfg.attr.AttributeNestedType.NestingMode)
@@ -91,7 +91,7 @@ func renderResourceOrDataSource(
 			if err != nil {
 				return nil, err
 			}
-			rootFields = append(rootFields, *mixinWithFnDoc, j.Hidden(*mixinWithFn))
+			rootFields = append(rootFields, j.Hidden(*mixinWithFnDoc), j.Hidden(*mixinWithFn))
 		}
 	}
 
@@ -112,7 +112,7 @@ func renderResourceOrDataSource(
 		if err != nil {
 			return nil, err
 		}
-		rootFields = append(rootFields, *bareWithFn, j.Hidden(*bareWithFnDoc))
+		rootFields = append(rootFields, j.Hidden(*bareWithFn), j.Hidden(*bareWithFnDoc))
 
 		mixinWithFnDoc, err := withFnDocs(
 			providerName, typ, resrcOrDataSrc, cfg.tfName, getBlockType(cfg.block.NestingMode), collTyp,
@@ -127,7 +127,7 @@ func renderResourceOrDataSource(
 		if err != nil {
 			return nil, err
 		}
-		rootFields = append(rootFields, *mixinWithFn, j.Hidden(*mixinWithFnDoc))
+		rootFields = append(rootFields, j.Hidden(*mixinWithFn), j.Hidden(*mixinWithFnDoc))
 
 		objectName := nameWithoutProvider(providerName, typ)
 		providerNameForNested := fmt.Sprintf(
