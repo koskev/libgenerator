@@ -62,12 +62,12 @@ func createJsonnetWorkDir(g *WithT, workDir string) {
 	mfc, err := os.ReadFile(jbManifestFile)
 	g.Expect(err).NotTo(HaveOccurred())
 	mfPath := filepath.Join(workDir, filepath.Base(jbManifestFile))
-	g.Expect(os.WriteFile(mfPath, mfc, 0644)).To(Succeed())
+	g.Expect(os.WriteFile(mfPath, mfc, 0o644)).To(Succeed())
 
 	lockC, err := os.ReadFile(jbLockFile)
 	g.Expect(err).NotTo(HaveOccurred())
 	lockPath := filepath.Join(workDir, filepath.Base(jbLockFile))
-	g.Expect(os.WriteFile(lockPath, lockC, 0644)).To(Succeed())
+	g.Expect(os.WriteFile(lockPath, lockC, 0o644)).To(Succeed())
 
 	cmd := exec.Command("jb", "install")
 	cmd.Dir = workDir
@@ -97,7 +97,7 @@ func evalJsonnetAndRunTerraform(
 	g.Expect(err).NotTo(HaveOccurred())
 
 	workingJsonnetFile := filepath.Join(tmpWorkDir, jsfBase)
-	g.Expect(os.WriteFile(workingJsonnetFile, contents, 0644)).To(Succeed())
+	g.Expect(os.WriteFile(workingJsonnetFile, contents, 0o644)).To(Succeed())
 
 	rendered, err := runTestJsonnetFile(workingJsonnetFile, tmpWorkDir)
 	g.Expect(err).NotTo(HaveOccurred())
@@ -108,10 +108,10 @@ func evalJsonnetAndRunTerraform(
 	defer os.RemoveAll(tfWorkDir)
 
 	tmpMainTF := filepath.Join(tfWorkDir, "main.tf.json")
-	g.Expect(os.WriteFile(tmpMainTF, []byte(rendered), 0644)).To(Succeed())
+	g.Expect(os.WriteFile(tmpMainTF, []byte(rendered), 0o644)).To(Succeed())
 
 	// Load Terraform and apply the rendered tf file
-	tfPath, err := exec.LookPath("terraform")
+	tfPath, err := exec.LookPath("tofu")
 	g.Expect(err).NotTo(HaveOccurred())
 	tf, err := tfexec.NewTerraform(tfWorkDir, tfPath)
 	g.Expect(err).NotTo(HaveOccurred())

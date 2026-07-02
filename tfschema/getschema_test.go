@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/gomega"
 
-	version "github.com/hashicorp/go-version"
 	"github.com/tf-libsonnet/libgenerator/internal/logging"
 )
 
@@ -64,8 +63,7 @@ func runGetSchemas(g *WithT, providerReqs []providerReq, expectedKeys []string) 
 
 	logger := logging.GetSugaredLoggerForTest()
 	ctx := context.Background()
-	tfV := version.Must(version.NewVersion("1.3.6"))
-	schemas, err := GetSchemas(logger, ctx, tfV, reqL)
+	schemas, err := GetSchemas(logger, ctx, reqL, "tofu")
 	g.Expect(err).NotTo(HaveOccurred())
 
 	for _, k := range expectedKeys {

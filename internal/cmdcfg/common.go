@@ -5,7 +5,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/hashicorp/go-version"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/tf-libsonnet/libgenerator/tfschema"
@@ -13,7 +12,7 @@ import (
 
 const (
 	providersFlagName = "provider"
-	tfVersionFlagName = "tfversion"
+	tfBinaryFlagName  = "tfbinary"
 )
 
 func addProviderAndTFVersionFlags(flags *pflag.FlagSet) {
@@ -28,12 +27,10 @@ multiple providers.
 `),
 	)
 	flags.String(
-		tfVersionFlagName,
-		"1.3.6",
+		tfBinaryFlagName,
+		"tofu",
 		strings.TrimSpace(`
-The version of Terraform to use when retrieving providers and their schema. If
-there is no compatible terraform version installed on the operator machine,
-libgenerator will download one from releases.hashicorp.com.
+		The opentofu or terraform binary to use
 `),
 	)
 }
@@ -69,14 +66,4 @@ func parseProvidersInput(cmd *cobra.Command) (tfschema.SchemaRequestList, error)
 	}
 
 	return out, nil
-}
-
-// parseTerraformVersion parses the --tfversion flag.
-func parseTerraformVersion(cmd *cobra.Command) (*version.Version, error) {
-	tfVersion, err := cmd.Flags().GetString(tfVersionFlagName)
-	if err != nil {
-		return nil, err
-	}
-
-	return version.NewVersion(tfVersion)
 }

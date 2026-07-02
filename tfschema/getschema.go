@@ -9,12 +9,6 @@ import (
 	_ "embed"
 
 	"github.com/google/go-jsonnet"
-	version "github.com/hashicorp/go-version"
-	install "github.com/hashicorp/hc-install"
-	"github.com/hashicorp/hc-install/fs"
-	"github.com/hashicorp/hc-install/product"
-	"github.com/hashicorp/hc-install/releases"
-	"github.com/hashicorp/hc-install/src"
 	"github.com/hashicorp/terraform-exec/tfexec"
 	tfjson "github.com/hashicorp/terraform-json"
 	tfaddr "github.com/hashicorp/terraform-registry-address"
@@ -26,10 +20,8 @@ const (
 	providersTFJSONName    = "providers.tf.json"
 )
 
-var (
-	//go:embed providers.tf.jsonnet
-	providersTFJsonnet string
-)
+//go:embed providers.tf.jsonnet
+var providersTFJsonnet string
 
 // SchemaRequestList represets a request to retrieve schemas for multiple Terraform providers.
 type SchemaRequestList []*SchemaRequest
@@ -78,37 +70,9 @@ func NewSchemaRequest(provider, version string) (*SchemaRequest, error) {
 func GetSchemas(
 	logger *zap.SugaredLogger,
 	ctx context.Context,
-	tfVersion *version.Version,
 	req SchemaRequestList,
+	tfPath string,
 ) (out *tfjson.ProviderSchemas, returnErr error) {
-	// Ensure Terraform binary is available.
-	inst := install.NewInstaller()
-	// Use an anon function so we handle the error for inst.Remove
-	defer func() {
-		if err := inst.Remove(ctx); err != nil {
-			logger.Errorf("Error removing installed Terraform files: %s", err)
-
-			// Bubble remove error to the return error if an error hasn't been reported yet.
-			if returnErr == nil {
-				returnErr = err
-			}
-		}
-	}()
-
-	logger.Debugf("Finding or installing terraform version %s", tfVersion)
-	tfPath, err := inst.Ensure(ctx, []src.Source{
-		&fs.ExactVersion{
-			Product: product.Terraform,
-			Version: tfVersion,
-		},
-		&releases.ExactVersion{
-			Product: product.Terraform,
-			Version: tfVersion,
-		},
-	})
-	if err != nil {
-		return nil, err
-	}
 	logger.Debugf("Using terraform binary %s", tfPath)
 
 	// Create a temporary directory to use as a workspace
@@ -162,5 +126,5 @@ func renderProvidersTFJSON(ctx context.Context, wd string, req SchemaRequestList
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(wd, providersTFJSONName), []byte(rendered), 0644)
+	return os.WriteFile(filepath.Join(wd, providersTFJSONName), []byte(rendered), 0o644)
 }

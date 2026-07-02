@@ -37,85 +37,82 @@ provider name.
 		"",
 		strings.TrimSpace("Path to a config file containing the list of libraries to render."),
 	)
-
 }
 
-var (
-	genCmd = &cobra.Command{
-		Use:   "gen",
-		Short: "Generate libsonnet libraries from Terraform providers",
-		Long: `gen generates libsonnet libraries for any given Terraform provider.
+var genCmd = &cobra.Command{
+	Use:   "gen",
+	Short: "Generate libsonnet libraries from Terraform providers",
+	Long: `gen generates libsonnet libraries for any given Terraform provider.
 
 This command will:
 - Retrieve the schema for resources and data sources from the provider.
 - Generate corresponding libsonnet files from the schema.
 - Write the libsonnet files to a subfolder named after the libraryName.
 `,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			configFile, err := cmd.Flags().GetString(configFlagName)
-			if err != nil {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		configFile, err := cmd.Flags().GetString(configFlagName)
+		if err != nil {
+			return err
+		}
+
+		var genCfg *genConfig
+		if configFile == "" {
+			genCfg, err = extractConfigFromProvidersInput(cmd)
+		} else {
+			genCfg, err = parseConfigFile(configFile)
+		}
+		if err != nil {
+			return err
+		}
+
+		tfBinary, err := cmd.Flags().GetString(tfBinaryFlagName)
+		if err != nil {
+			return err
+		}
+
+		outDir, err := cmd.Flags().GetString(outDirFlagName)
+		if err != nil {
+			return err
+		}
+
+		logC, err := parseLoggerArgs()
+		if err != nil {
+			return err
+		}
+		logger := logging.GetSugaredLogger(logC)
+
+		logger.Info("Retrieving schemas for providers")
+		ctx := context.Background()
+		schema, err := tfschema.GetSchemas(logger, ctx, genCfg.requests, tfBinary)
+		if err != nil {
+			return err
+		}
+
+		for _, entry := range genCfg.entries {
+			k := entry.Provider.schemaRequest.Src
+			pName := entry.Provider.schemaRequest.Name
+
+			libRoot := filepath.Join(outDir, entry.Repo, entry.Subdir)
+			if err := os.MkdirAll(libRoot, 0o755); err != nil {
 				return err
 			}
 
-			var genCfg *genConfig
-			if configFile == "" {
-				genCfg, err = extractConfigFromProvidersInput(cmd)
-			} else {
-				genCfg, err = parseConfigFile(configFile)
+			logger.Infof("Rendering %s library to %s", k, libRoot)
+			providerSchema := schema.Schemas[k]
+			opts := gen.RenderLibraryOpts{
+				ProviderName:   pName,
+				Schema:         providerSchema,
+				ResourcePrefix: entry.ResourcePrefix,
 			}
-			if err != nil {
-				return err
+			renderErr := gen.RenderLibrary(logger, libRoot, opts)
+			if renderErr != nil {
+				return renderErr
 			}
+		}
 
-			tfV, err := parseTerraformVersion(cmd)
-			if err != nil {
-				return err
-			}
-
-			outDir, err := cmd.Flags().GetString(outDirFlagName)
-			if err != nil {
-				return err
-			}
-
-			logC, err := parseLoggerArgs()
-			if err != nil {
-				return err
-			}
-			logger := logging.GetSugaredLogger(logC)
-
-			logger.Info("Retrieving schemas for providers")
-			ctx := context.Background()
-			schema, err := tfschema.GetSchemas(logger, ctx, tfV, genCfg.requests)
-			if err != nil {
-				return err
-			}
-
-			for _, entry := range genCfg.entries {
-				k := entry.Provider.schemaRequest.Src
-				pName := entry.Provider.schemaRequest.Name
-
-				libRoot := filepath.Join(outDir, entry.Repo, entry.Subdir)
-				if err := os.MkdirAll(libRoot, 0755); err != nil {
-					return err
-				}
-
-				logger.Infof("Rendering %s library to %s", k, libRoot)
-				providerSchema := schema.Schemas[k]
-				opts := gen.RenderLibraryOpts{
-					ProviderName:   pName,
-					Schema:         providerSchema,
-					ResourcePrefix: entry.ResourcePrefix,
-				}
-				renderErr := gen.RenderLibrary(logger, libRoot, opts)
-				if renderErr != nil {
-					return renderErr
-				}
-			}
-
-			return nil
-		},
-	}
-)
+		return nil
+	},
+}
 
 type genConfig struct {
 	entries  []configEntry
