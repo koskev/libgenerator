@@ -7,7 +7,7 @@ local mergeAll(objs) = std.foldl(
 
 // Accept the list of providers as a TLA json object and render out the required_providers block so that all the
 // providers can be downloaded.
-function(providers)
+function(providers=[])
   mergeAll([
     {
       terraform+: {
